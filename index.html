@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friend Tea Shop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+Tamil:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+     Palette: warm chai/amber tones. Change these to re-theme
+     the whole app without touching any other CSS.
+     ============================================================ */
+  :root{
+    --bg:            #F7ECD9;   /* warm cream backdrop, like milky chai */
+    --bg-deep:       #EFDFC2;   /* slightly deeper cream for alt rows */
+    --card:          #FFFBF3;   /* card surface */
+    --line:          #E3CBA3;   /* soft tan borders */
+    --ink:           #3B2414;   /* espresso brown - main text */
+    --ink-soft:      #6B4B30;   /* softer brown - secondary text */
+    --brown:         #7A4A21;   /* primary chai-brown */
+    --brown-deep:    #55300F;   /* deep roast brown - hover/active */
+    --amber:         #C1791A;   /* amber accent */
+    --amber-deep:    #A65D19;   /* terracotta-brown accent (avoid AI-default orange) */
+    --good:          #5C7A3A;   /* muted olive - positive numbers */
+    --bad:           #A63A2E;   /* muted brick red - warnings/delete */
+    --shadow:        0 2px 10px rgba(59,36,20,0.08);
+    --shadow-lift:   0 8px 24px rgba(59,36,20,0.14);
+    --radius:        14px;
+    --radius-sm:     9px;
+    --font-display:  'Playfair Display', 'Noto Serif Tamil', serif;
+    --font-body:     'Lora', 'Noto Serif Tamil', serif;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(193,121,26,0.08), transparent 45%),
+      radial-gradient(circle at 85% 92%, rgba(122,74,33,0.08), transparent 45%);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,h4{ font-family:var(--font-display); margin:0; color:var(--ink); }
+  button{ font-family:inherit; }
+  input, select, textarea{ font-family:inherit; }
+  ::selection{ background:var(--amber); color:#fff; }
+  :focus-visible{ outline:2px solid var(--amber-deep); outline-offset:2px; }
+
+  .app{ max-width:960px; margin:0 auto; padding:0 0 60px; }
+
+  /* ============================================================
+     HEADER — signature element: a hand-drawn "chai pour" wave
+     divider under the header, and gently rising steam wisps
+     beside the cup mark.
+     ============================================================ */
+  .app-header{
+    position:relative;
+    padding:38px 24px 46px;
+    text-align:center;
+    background:linear-gradient(180deg, var(--brown) 0%, var(--brown-deep) 100%);
+    color:#FBF1DD;
+    overflow:hidden;
+  }
+  .steam-mark{
+    position:relative;
+    display:inline-flex;
+    align-items:flex-end;
+    justify-content:center;
+    width:56px; height:56px;
+    margin-bottom:6px;
+  }
+  .steam-mark .cup{ font-size:34px; line-height:1; }
+  .steam-mark svg{ position:absolute; top:-26px; left:50%; transform:translateX(-50%); }
+  .steam-wisp{
+    stroke:rgba(251,241,221,0.55);
+    stroke-width:2.4;
+    fill:none;
+    stroke-linecap:round;
+    transform-origin:center bottom;
+    animation:rise 3.2s ease-in-out infinite;
+  }
+  .steam-wisp.w2{ animation-delay:0.6s; }
+  .steam-wisp.w3{ animation-delay:1.2s; }
+  @keyframes rise{
+    0%{ opacity:0; transform:translateY(4px) scaleY(0.9); }
+    30%{ opacity:1; }
+    100%{ opacity:0; transform:translateY(-10px) scaleY(1.05); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .steam-wisp{ animation:none; opacity:0.6; }
+  }
+  .shop-name{ font-size:clamp(28px,5vw,40px); font-weight:800; letter-spacing:0.2px; }
+  .shop-tagline{ margin-top:6px; font-style:italic; font-size:15px; color:#E7D2AC; }
+  .pour-divider{ position:absolute; left:0; right:0; bottom:-1px; line-height:0; }
+  .pour-divider svg{ width:100%; height:34px; display:block; }
+
+  /* ============================================================
+     TAB NAVIGATION
+     ============================================================ */
+  .tabs{
+    display:flex;
+    gap:6px;
+    padding:14px 14px 0;
+    overflow-x:auto;
+    scrollbar-width:none;
+    background:var(--bg);
+    position:sticky; top:0; z-index:20;
+    border-bottom:1px solid var(--line);
+  }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab-btn{
+    flex:0 0 auto;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:10px 16px 12px;
+    border:none; background:transparent; cursor:pointer;
+    color:var(--ink-soft);
+    border-bottom:3px solid transparent;
+    transition:color .18s ease, border-color .18s ease;
+    font-size:13px;
+  }
+  .tab-btn .ic{ font-size:19px; }
+  .tab-btn .en{ font-weight:600; }
+  .tab-btn .ta{ font-size:11px; opacity:0.75; }
+  .tab-btn:hover{ color:var(--brown-deep); }
+  .tab-btn.active{ color:var(--brown-deep); border-color:var(--amber-deep); }
+
+  main{ padding:20px 16px 0; }
+  .tab-panel{ display:none; animation:fadeIn .25s ease; }
+  .tab-panel.active{ display:block; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .section-head h2{ font-size:22px; }
+  .section-head .sub{ font-size:12.5px; color:var(--ink-soft); }
+
+  /* ============================================================
+     CARDS / SHARED COMPONENTS
+     ============================================================ */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px;
+  }
+  .grid{ display:grid; gap:14px; }
+  .grid.cols-2{ grid-template-columns:repeat(2,1fr); }
+  .grid.cols-4{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:640px){
+    .grid.cols-4{ grid-template-columns:repeat(2,1fr); }
+  }
+
+  .stat-card{ text-align:center; padding:16px 10px; }
+  .stat-card .num{ font-family:var(--font-display); font-size:26px; font-weight:700; color:var(--brown-deep); }
+  .stat-card .lbl{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .stat-card .lbl .ta{ display:block; font-size:11px; opacity:0.7; }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    border:none; border-radius:999px; cursor:pointer;
+    padding:10px 18px; font-size:14px; font-weight:600;
+    background:var(--brown); color:#fff;
+    box-shadow:var(--shadow);
+    transition:transform .12s ease, box-shadow .12s ease, background .15s ease;
+  }
+  .btn:hover{ background:var(--brown-deep); box-shadow:var(--shadow-lift); transform:translateY(-1px); }
+  .btn:active{ transform:translateY(0); }
+  .btn.ghost{ background:transparent; color:var(--brown-deep); border:1.5px solid var(--line); box-shadow:none; }
+  .btn.ghost:hover{ background:var(--bg-deep); }
+  .btn.danger{ background:var(--bad); }
+  .btn.danger:hover{ background:#7d281f; }
+  .btn.sm{ padding:7px 13px; font-size:12.5px; }
+  .btn:disabled{ opacity:0.45; cursor:not-allowed; transform:none; }
+
+  label.field{ display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    width:100%; padding:10px 12px; border-radius:var(--radius-sm);
+    border:1.5px solid var(--line); background:#fffef9; color:var(--ink);
+    font-size:14.5px;
+  }
+  textarea{ resize:vertical; min-height:56px; }
+  .field-row{ margin-bottom:12px; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:560px){ .form-grid{ grid-template-columns:1fr; } }
+
+  .item-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 14px; border-radius:var(--radius-sm);
+    border:1px solid var(--line); background:var(--card);
+    margin-bottom:8px;
+  }
+  .item-row .info{ flex:1; min-width:0; }
+  .item-row .name{ font-weight:700; color:var(--brown-deep); }
+  .item-row .meta{ font-size:12px; color:var(--ink-soft); }
+  .item-row .price{ font-family:var(--font-display); font-weight:700; color:var(--brown); white-space:nowrap; }
+  .row-actions{ display:flex; gap:6px; }
+  .icon-btn{
+    border:none; background:var(--bg-deep); color:var(--brown-deep);
+    width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:14px;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease;
+  }
+  .icon-btn:hover{ background:var(--line); }
+  .icon-btn.danger{ color:var(--bad); }
+
+  .pill{ display:inline-block; padding:2px 9px; font-size:11px; border-radius:999px; background:var(--bg-deep); color:var(--ink-soft); }
+  .pill.low{ background:#F3DEDA; color:var(--bad); font-weight:700; }
+
+  .empty-state{
+    text-align:center; padding:38px 20px; color:var(--ink-soft);
+    border:1.5px dashed var(--line); border-radius:var(--radius);
+    background:rgba(255,255,255,0.4);
+  }
+  .empty-state .ic{ font-size:30px; display:block; margin-bottom:8px; }
+  .empty-state .en{ font-weight:600; color:var(--brown-deep); }
+  .empty-state .ta{ font-size:13px; margin-top:2px; }
+
+  .qty-stepper{ display:flex; align-items:center; gap:8px; }
+  .qty-stepper button{
+    width:28px; height:28px; border-radius:8px; border:1px solid var(--line);
+    background:var(--card); color:var(--brown-deep); font-weight:700; cursor:pointer;
+  }
+  .qty-stepper button:hover{ background:var(--bg-deep); }
+  .qty-stepper .val{ min-width:22px; text-align:center; font-weight:700; }
+
+  .cart-box{ position:sticky; bottom:12px; margin-top:16px; }
+  .cart-total-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .cart-total-row .num{ font-family:var(--font-display); font-size:24px; color:var(--brown-deep); font-weight:800; }
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+    background:var(--brown-deep); color:#FBF1DD; padding:12px 20px; border-radius:999px;
+    box-shadow:var(--shadow-lift); font-size:14px; opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease; z-index:100; white-space:nowrap;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .divider{ height:1px; background:var(--line); margin:18px 0; border:none; }
+
+  .day-group{ margin-bottom:16px; }
+  .day-group h3{ font-size:14px; color:var(--brown-deep); margin-bottom:8px; }
+  .day-totals{ display:flex; gap:14px; font-size:12.5px; color:var(--ink-soft); margin-bottom:8px; flex-wrap:wrap; }
+  .day-totals b{ color:var(--ink); }
+
+  footer{ text-align:center; padding:26px 16px 10px; color:var(--ink-soft); font-size:12px; }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(59,36,20,0.45);
+    display:none; align-items:center; justify-content:center; z-index:200; padding:16px;
+  }
+  .modal-backdrop.show{ display:flex; }
+  .modal{
+    background:var(--card); border-radius:var(--radius); padding:22px;
+    max-width:380px; width:100%; box-shadow:var(--shadow-lift);
+  }
+  .modal h3{ margin-bottom:10px; }
+  .modal p{ font-size:14px; color:var(--ink-soft); margin:0 0 16px; }
+  .modal .actions{ display:flex; gap:10px; justify-content:flex-end; }
+
+  .settings-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  #importFileInput{ display:none; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
+  <header class="app-header">
+    <div class="steam-mark">
+      <svg width="40" height="30" viewBox="0 0 40 30">
+        <path class="steam-wisp" d="M14 28 C10 20, 18 16, 14 8" />
+        <path class="steam-wisp w2" d="M20 28 C16 20, 24 16, 20 8" />
+        <path class="steam-wisp w3" d="M26 28 C22 20, 30 16, 26 8" />
+      </svg>
+      <span class="cup">🍵</span>
+    </div>
+    <h1 class="shop-name" id="displayShopName">Friend Tea Shop</h1>
+    <div class="shop-tagline" id="displayTagline">The Taste of Tea</div>
+    <div class="pour-divider">
+      <svg viewBox="0 0 500 34" preserveAspectRatio="none">
+        <path d="M0,20 C80,34 160,4 250,18 C340,32 420,6 500,20 L500,34 L0,34 Z" fill="#F7ECD9"/>
+      </svg>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       TAB NAVIGATION
+       ============================================================ -->
+  <nav class="tabs" id="tabNav">
+    <button class="tab-btn active" data-tab="dashboard"><span class="ic">🏠</span><span class="en">Dashboard</span><span class="ta">முகப்பு</span></button>
+    <button class="tab-btn" data-tab="menu"><span class="ic">🍵</span><span class="en">Menu</span><span class="ta">மெனு</span></button>
+    <button class="tab-btn" data-tab="orders"><span class="ic">🧾</span><span class="en">Orders</span><span class="ta">ஆர்டர்கள்</span></button>
+    <button class="tab-btn" data-tab="stock"><span class="ic">📦</span><span class="en">Stock</span><span class="ta">இருப்பு</span></button>
+    <button class="tab-btn" data-tab="sales"><span class="ic">💰</span><span class="en">Sales</span><span class="ta">விற்பனை</span></button>
+    <button class="tab-btn" data-tab="settings"><span class="ic">⚙️</span><span class="en">Settings</span><span class="ta">அமைப்புகள்</span></button>
+  </nav>
+
+  <main>
+
+    <!-- ============================================================
+         DASHBOARD
+         ============================================================ -->
+    <section id="dashboard" class="tab-panel active">
+      <div class="section-head">
+        <div>
+          <h2>Today at a glance</h2>
+          <div class="sub">இன்றைய சுருக்கம்</div>
+        </div>
+      </div>
+      <div class="grid cols-4" id="dashboardStats"></div>
+
+      <hr class="divider">
+
+      <div class="section-head">
+        <div>
+          <h2>Low stock alerts</h2>
+          <div class="sub">குறைந்த இருப்பு எச்சரிக்கை</div>
+        </div>
+        <button class="btn ghost sm" data-goto="stock">View stock →</button>
+      </div>
+      <div id="dashboardLowStock"></div>
+
+      <hr class="divider">
+
+      <div class="section-head">
+        <div>
+          <h2>Recent orders</h2>
+          <div class="sub">சமீபத்திய ஆர்டர்கள்</div>
+        </div>
+        <button class="btn ghost sm" data-goto="orders">Take an order →</button>
+      </div>
+      <div id="dashboardRecentOrders"></div>
+    </section>
+
+    <!-- ============================================================
+         MENU
+         ============================================================ -->
+    <section id="menu" class="tab-panel">
+      <div class="section-head">
+        <div>
+          <h2>Menu &amp; prices</h2>
+          <div class="sub">மெனு மற்றும் விலைகள்</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="font-size:16px; margin-bottom:12px;" id="menuFormTitle">Add an item · பொருள் சேர்க்க</h3>
+        <input type="hidden" id="menuItemId">
+        <div class="form-grid">
+          <div class="field-row">
+            <label class="field">Name · பெயர்</label>
+            <input type="text" id="menuName" placeholder="e.g. Ginger Tea">
+          </div>
+          <div class="field-row">
+            <label class="field">Category · வகை</label>
+            <select id="menuCategory">
+              <option>Tea</option>
+              <option>Snacks</option>
+              <option>Beverages</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label class="field">Price (₹) · விலை</label>
+            <input type="number" id="menuPrice" min="0" step="0.5" placeholder="e.g. 15">
+          </div>
+          <div class="field-row">
+            <label class="field">Starting stock · ஆரம்ப இருப்பு</label>
+            <input type="number" id="menuStock" min="0" step="1" placeholder="e.g. 20">
+          </div>
+        </div>
+        <div class="field-row">
+          <label class="field">Description (optional) · விளக்கம்</label>
+          <textarea id="menuDesc" placeholder="e.g. Fresh ginger, brewed strong"></textarea>
+        </div>
+        <div id="menuFormError" style="color:var(--bad); font-size:13px; margin-bottom:10px; display:none;"></div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" id="menuSaveBtn">Save item · சேமிக்க</button>
+          <button class="btn ghost" id="menuCancelEditBtn" style="display:none;">Cancel</button>
+        </div>
+      </div>
+
+      <div id="menuList"></div>
+    </section>
+
+    <!-- ============================================================
+         ORDERS
+         ============================================================ -->
+    <section id="orders" class="tab-panel">
+      <div class="section-head">
+        <div>
+          <h2>Take an order</h2>
+          <div class="sub">ஆர்டர் எடுக்க</div>
+        </div>
+      </div>
+
+      <div id="orderMenuPicker"></div>
+
+      <div class="cart-box card" id="cartBox" style="display:none;">
+        <h3 style="font-size:15px; margin-bottom:10px;">Current order · தற்போதைய ஆர்டர்</h3>
+        <div id="cartItems"></div>
+        <div class="cart-total-row">
+          <span>Total · மொத்தம்</span>
+          <span class="num" id="cartTotal">₹0</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" id="completeOrderBtn">Complete order · முடிந்தது</button>
+          <button class="btn ghost" id="clearCartBtn">Clear</button>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="section-head">
+        <div>
+          <h2>Order history</h2>
+          <div class="sub">ஆர்டர் வரலாறு</div>
+        </div>
+      </div>
+      <div id="orderHistory"></div>
+    </section>
+
+    <!-- ============================================================
+         STOCK
+         ============================================================ -->
+    <section id="stock" class="tab-panel">
+      <div class="section-head">
+        <div>
+          <h2>Stock count</h2>
+          <div class="sub">இருப்பு கணக்கு</div>
+        </div>
+      </div>
+      <div id="stockList"></div>
+    </section>
+
+    <!-- ============================================================
+         SALES
+         ============================================================ -->
+    <section id="sales" class="tab-panel">
+      <div class="section-head">
+        <div>
+          <h2>Daily sales &amp; expenses</h2>
+          <div class="sub">தினசரி விற்பனை மற்றும் செலவுகள்</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="font-size:16px; margin-bottom:12px;">Add an expense · செலவு சேர்க்க</h3>
+        <div class="form-grid">
+          <div class="field-row">
+            <label class="field">Date · தேதி</label>
+            <input type="date" id="expenseDate">
+          </div>
+          <div class="field-row">
+            <label class="field">Amount (₹) · தொகை</label>
+            <input type="number" id="expenseAmount" min="0" step="0.5" placeholder="e.g. 200">
+          </div>
+        </div>
+        <div class="field-row">
+          <label class="field">Description · விவரம்</label>
+          <input type="text" id="expenseDesc" placeholder="e.g. Milk purchase">
+        </div>
+        <div id="expenseFormError" style="color:var(--bad); font-size:13px; margin-bottom:10px; display:none;"></div>
+        <button class="btn" id="addExpenseBtn">Add expense</button>
+      </div>
+
+      <div id="salesLog"></div>
+    </section>
+
+    <!-- ============================================================
+         SETTINGS
+         ============================================================ -->
+    <section id="settings" class="tab-panel">
+      <div class="section-head">
+        <div>
+          <h2>Settings</h2>
+          <div class="sub">அமைப்புகள்</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="font-size:16px; margin-bottom:12px;">Shop details · கடை விவரங்கள்</h3>
+        <div class="field-row">
+          <label class="field">Shop name · கடையின் பெயர்</label>
+          <input type="text" id="settingsShopName">
+        </div>
+        <div class="field-row">
+          <label class="field">Tagline · டேக்லைன்</label>
+          <input type="text" id="settingsTagline">
+        </div>
+        <button class="btn" id="saveSettingsBtn">Save details</button>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:16px; margin-bottom:8px;">Data · டேட்டா</h3>
+        <p style="font-size:13px; color:var(--ink-soft); margin:0 0 12px;">
+          All data is stored only in this browser (localStorage). Export a backup regularly, especially before clearing browser data.<br>
+          எல்லா டேட்டாவும் இந்த browser-ல் மட்டுமே சேமிக்கப்படுகிறது. அவ்வப்போது backup export செய்யவும்.
+        </p>
+        <div class="settings-actions">
+          <button class="btn ghost" id="exportBtn">⬇ Export backup (JSON)</button>
+          <button class="btn ghost" id="importBtn">⬆ Import backup</button>
+          <button class="btn danger" id="clearDataBtn">🗑 Clear all data</button>
+        </div>
+        <input type="file" id="importFileInput" accept="application/json">
+      </div>
+    </section>
+
+  </main>
+
+  <footer>Made with care for Friend Tea Shop · Built with Claude</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="confirmModal">
+  <div class="modal">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmBody"></p>
+    <div class="actions">
+      <button class="btn ghost" id="confirmCancelBtn">Cancel</button>
+      <button class="btn danger" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     STORAGE KEYS & HELPERS
+     All data lives in localStorage under these keys. No backend,
+     no external APIs — everything works fully offline.
+     ============================================================ */
+  const LS = {
+    settings: 'fts_settings',
+    items:    'fts_items',
+    stock:    'fts_stock',      // { [itemId]: { qty, lowAt } }
+    orders:   'fts_orders',
+    expenses: 'fts_expenses'
+  };
+
+  function loadJSON(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      if(raw === null) return fallback;
+      return JSON.parse(raw);
+    }catch(e){ return fallback; }
+  }
+  function saveJSON(key, val){
+    localStorage.setItem(key, JSON.stringify(val));
+  }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function money(n){ return '₹' + (Math.round(n*100)/100).toLocaleString('en-IN'); }
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  /* ============================================================
+     STATE — loaded from localStorage on boot, saved after every change
+     ============================================================ */
+  let settings = loadJSON(LS.settings, { shopName:'Friend Tea Shop', tagline:'The Taste of Tea' });
+  let items    = loadJSON(LS.items, []);      // { id, name, category, price, desc }
+  let stock    = loadJSON(LS.stock, {});      // { [itemId]: { qty, lowAt } }
+  let orders   = loadJSON(LS.orders, []);     // { id, ts, lines:[{itemId,name,price,qty}], total }
+  let expenses = loadJSON(LS.expenses, []);   // { id, date, desc, amount }
+  let cart     = {}; // { [itemId]: qty }  -- not persisted, resets after order/refresh
+
+  function persistAll(){
+    saveJSON(LS.settings, settings);
+    saveJSON(LS.items, items);
+    saveJSON(LS.stock, stock);
+    saveJSON(LS.orders, orders);
+    saveJSON(LS.expenses, expenses);
+  }
+
+  /* ============================================================
+     TOAST
+     ============================================================ */
+  let toastTimer = null;
+  function toast(msg){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
+  }
+
+  /* ============================================================
+     CONFIRM MODAL (used for delete / clear-data actions)
+     ============================================================ */
+  function confirmAction(title, body, onOk){
+    const modal = document.getElementById('confirmModal');
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmBody').textContent = body;
+    modal.classList.add('show');
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    function cleanup(){
+      modal.classList.remove('show');
+      okBtn.removeEventListener('click', okHandler);
+      cancelBtn.removeEventListener('click', cancelHandler);
+    }
+    function okHandler(){ cleanup(); onOk(); }
+    function cancelHandler(){ cleanup(); }
+    okBtn.addEventListener('click', okHandler);
+    cancelBtn.addEventListener('click', cancelHandler);
+  }
+
+  /* ============================================================
+     TAB NAVIGATION
+     ============================================================ */
+  function goToTab(tab){
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
+    renderAll();
+  }
+  document.getElementById('tabNav').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.tab-btn');
+    if(btn) goToTab(btn.dataset.tab);
+  });
+  document.querySelectorAll('[data-goto]').forEach(el=>{
+    el.addEventListener('click', ()=> goToTab(el.dataset.goto));
+  });
+
+  /* ============================================================
+     HEADER + SETTINGS
+     ============================================================ */
+  function renderHeader(){
+    document.getElementById('displayShopName').textContent = settings.shopName || 'My Tea Shop';
+    document.getElementById('displayTagline').textContent = settings.tagline || '';
+    document.getElementById('displayTagline').style.display = settings.tagline ? '' : 'none';
+    document.getElementById('settingsShopName').value = settings.shopName || '';
+    document.getElementById('settingsTagline').value = settings.tagline || '';
+  }
+  document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+    const name = document.getElementById('settingsShopName').value.trim();
+    if(!name){ toast('Shop name cannot be empty'); return; }
+    settings.shopName = name;
+    settings.tagline = document.getElementById('settingsTagline').value.trim();
+    persistAll();
+    renderHeader();
+    toast('Saved · சேமிக்கப்பட்டது');
+  });
+
+  // Export
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const backup = { settings, items, stock, orders, expenses, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `friend-tea-shop-backup-${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('Backup downloaded');
+  });
+
+  // Import
+  document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFileInput').click());
+  document.getElementById('importFileInput').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        confirmAction('Import backup?', 'This will replace all current data in this browser with the backup file. This cannot be undone.', ()=>{
+          settings = data.settings || settings;
+          items = data.items || [];
+          stock = data.stock || {};
+          orders = data.orders || [];
+          expenses = data.expenses || [];
+          persistAll();
+          renderAll(); renderHeader();
+          toast('Backup imported');
+        });
+      }catch(err){
+        toast('Could not read that file — is it a valid backup JSON?');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // Clear all data
+  document.getElementById('clearDataBtn').addEventListener('click', ()=>{
+    confirmAction('Clear all data?', 'This permanently deletes all items, orders, stock and sales records in this browser. Export a backup first if unsure.', ()=>{
+      items = []; stock = {}; orders = []; expenses = [];
+      persistAll();
+      renderAll();
+      toast('All data cleared');
+    });
+  });
+
+  /* ============================================================
+     MENU (items) — add / edit / delete
+     ============================================================ */
+  let editingItemId = null;
+
+  function renderMenu(){
+    const list = document.getElementById('menuList');
+    if(items.length === 0){
+      list.innerHTML = `<div class="empty-state">
+        <span class="ic">🍵</span>
+        <div class="en">No items yet — add your first item above</div>
+        <div class="ta">இன்னும் பொருட்கள் இல்லை — முதல் பொருளைச் சேருங்கள்</div>
+      </div>`;
+      return;
+    }
+    list.innerHTML = items.map(it => `
+      <div class="item-row">
+        <div class="info">
+          <div class="name">${escapeHtml(it.name)} <span class="pill">${escapeHtml(it.category)}</span></div>
+          ${it.desc ? `<div class="meta">${escapeHtml(it.desc)}</div>` : ''}
+        </div>
+        <div class="price">${money(it.price)}</div>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="${it.id}" title="Edit">✎</button>
+          <button class="icon-btn danger" data-del="${it.id}" title="Delete">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function resetMenuForm(){
+    editingItemId = null;
+    document.getElementById('menuItemId').value = '';
+    document.getElementById('menuName').value = '';
+    document.getElementById('menuCategory').value = 'Tea';
+    document.getElementById('menuPrice').value = '';
+    document.getElementById('menuStock').value = '';
+    document.getElementById('menuDesc').value = '';
+    document.getElementById('menuFormError').style.display = 'none';
+    document.getElementById('menuFormTitle').textContent = 'Add an item · பொருள் சேர்க்க';
+    document.getElementById('menuSaveBtn').textContent = 'Save item · சேமிக்க';
+    document.getElementById('menuCancelEditBtn').style.display = 'none';
+  }
+
+  document.getElementById('menuSaveBtn').addEventListener('click', ()=>{
+    const name = document.getElementById('menuName').value.trim();
+    const category = document.getElementById('menuCategory').value;
+    const price = parseFloat(document.getElementById('menuPrice').value);
+    const stockVal = document.getElementById('menuStock').value;
+    const desc = document.getElementById('menuDesc').value.trim();
+    const errEl = document.getElementById('menuFormError');
+
+    if(!name){ errEl.textContent = 'Please enter an item name.'; errEl.style.display='block'; return; }
+    if(isNaN(price) || price <= 0){ errEl.textContent = 'Please enter a valid price greater than 0.'; errEl.style.display='block'; return; }
+    errEl.style.display = 'none';
+
+    if(editingItemId){
+      const it = items.find(x=>x.id===editingItemId);
+      it.name = name; it.category = category; it.price = price; it.desc = desc;
+    } else {
+      const id = uid();
+      items.push({ id, name, category, price, desc });
+      stock[id] = { qty: stockVal ? Math.max(0, parseInt(stockVal)) : 0, lowAt: 5 };
+    }
+    persistAll();
+    resetMenuForm();
+    renderAll();
+    toast('Item saved · சேமிக்கப்பட்டது');
+  });
+
+  document.getElementById('menuCancelEditBtn').addEventListener('click', resetMenuForm);
+
+  document.getElementById('menuList').addEventListener('click', (e)=>{
+    const editId = e.target.closest('[data-edit]');
+    const delId = e.target.closest('[data-del]');
+    if(editId){
+      const it = items.find(x=>x.id === editId.dataset.edit);
+      if(!it) return;
+      editingItemId = it.id;
+      document.getElementById('menuItemId').value = it.id;
+      document.getElementById('menuName').value = it.name;
+      document.getElementById('menuCategory').value = it.category;
+      document.getElementById('menuPrice').value = it.price;
+      document.getElementById('menuStock').value = (stock[it.id]||{}).qty ?? '';
+      document.getElementById('menuDesc').value = it.desc || '';
+      document.getElementById('menuFormTitle').textContent = 'Edit item · பொருளைத் திருத்த';
+      document.getElementById('menuSaveBtn').textContent = 'Update item · புதுப்பிக்க';
+      document.getElementById('menuCancelEditBtn').style.display = 'inline-flex';
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    if(delId){
+      const id = delId.dataset.del;
+      const it = items.find(x=>x.id === id);
+      confirmAction('Delete item?', `Remove "${it ? it.name : 'this item'}" from the menu? Its stock record will also be removed.`, ()=>{
+        items = items.filter(x=>x.id !== id);
+        delete stock[id];
+        Object.keys(cart).forEach(k=>{ if(k===id) delete cart[k]; });
+        persistAll();
+        renderAll();
+        toast('Item deleted');
+      });
+    }
+  });
+
+  /* ============================================================
+     ORDERS — menu picker + cart + complete order
+     ============================================================ */
+  function renderOrderPicker(){
+    const el = document.getElementById('orderMenuPicker');
+    if(items.length === 0){
+      el.innerHTML = `<div class="empty-state">
+        <span class="ic">🍵</span>
+        <div class="en">Add items to the menu first</div>
+        <div class="ta">முதலில் மெனுவில் பொருட்களைச் சேர்க்கவும்</div>
+      </div>`;
+      return;
+    }
+    el.innerHTML = items.map(it=>{
+      const q = cart[it.id] || 0;
+      const avail = (stock[it.id]||{}).qty ?? 0;
+      return `
+      <div class="item-row">
+        <div class="info">
+          <div class="name">${escapeHtml(it.name)}</div>
+          <div class="meta">${money(it.price)} &middot; ${avail} in stock</div>
+        </div>
+        <div class="qty-stepper">
+          <button data-dec="${it.id}" ${q<=0?'disabled':''}>−</button>
+          <span class="val">${q}</span>
+          <button data-inc="${it.id}">+</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('orderMenuPicker').addEventListener('click', (e)=>{
+    const inc = e.target.closest('[data-inc]');
+    const dec = e.target.closest('[data-dec]');
+    if(inc){
+      const id = inc.dataset.inc;
+      cart[id] = (cart[id]||0) + 1;
+      renderOrderPicker(); renderCart();
+    }
+    if(dec){
+      const id = dec.dataset.dec;
+      cart[id] = Math.max(0, (cart[id]||0) - 1);
+      if(cart[id] === 0) delete cart[id];
+      renderOrderPicker(); renderCart();
+    }
+  });
+
+  function renderCart(){
+    const box = document.getElementById('cartBox');
+    const ids = Object.keys(cart);
+    if(ids.length === 0){ box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    let total = 0;
+    document.getElementById('cartItems').innerHTML = ids.map(id=>{
+      const it = items.find(x=>x.id===id);
+      if(!it) return '';
+      const qty = cart[id];
+      const lineTotal = it.price * qty;
+      total += lineTotal;
+      return `<div class="item-row" style="padding:8px 10px;">
+        <div class="info"><div class="name" style="font-size:14px;">${escapeHtml(it.name)} × ${qty}</div></div>
+        <div class="price">${money(lineTotal)}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('cartTotal').textContent = money(total);
+  }
+
+  document.getElementById('clearCartBtn').addEventListener('click', ()=>{
+    cart = {};
+    renderOrderPicker(); renderCart();
+  });
+
+  document.getElementById('completeOrderBtn').addEventListener('click', ()=>{
+    const ids = Object.keys(cart);
+    if(ids.length === 0) return;
+    const lines = ids.map(id=>{
+      const it = items.find(x=>x.id===id);
+      return { itemId:id, name: it.name, price: it.price, qty: cart[id] };
+    });
+    const total = lines.reduce((s,l)=> s + l.price*l.qty, 0);
+    orders.push({ id: uid(), ts: new Date().toISOString(), lines, total });
+    // decrement stock, floor at 0
+    ids.forEach(id=>{
+      if(stock[id]){
+        stock[id].qty = Math.max(0, (stock[id].qty||0) - cart[id]);
+      }
+    });
+    cart = {};
+    persistAll();
+    renderAll();
+    toast('Order completed · ஆர்டர் முடிந்தது');
+  });
+
+  function renderOrderHistory(){
+    const el = document.getElementById('orderHistory');
+    if(orders.length === 0){
+      el.innerHTML = `<div class="empty-state">
+        <span class="ic">🧾</span>
+        <div class="en">No orders yet</div>
+        <div class="ta">இன்னும் ஆர்டர்கள் இல்லை</div>
+      </div>`;
+      return;
+    }
+    const sorted = [...orders].sort((a,b)=> new Date(b.ts) - new Date(a.ts));
+    el.innerHTML = sorted.slice(0,50).map(o=>{
+      const dt = new Date(o.ts);
+      const itemsStr = o.lines.map(l=> `${l.name} ×${l.qty}`).join(', ');
+      return `<div class="item-row">
+        <div class="info">
+          <div class="name" style="font-size:14px;">${dt.toLocaleDateString('en-IN')} ${dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="meta">${escapeHtml(itemsStr)}</div>
+        </div>
+        <div class="price">${money(o.total)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ============================================================
+     STOCK
+     ============================================================ */
+  function renderStock(){
+    const el = document.getElementById('stockList');
+    if(items.length === 0){
+      el.innerHTML = `<div class="empty-state">
+        <span class="ic">📦</span>
+        <div class="en">No items to track yet</div>
+        <div class="ta">இன்னும் பொருட்கள் இல்லை</div>
+      </div>`;
+      return;
+    }
+    el.innerHTML = items.map(it=>{
+      const s = stock[it.id] || { qty:0, lowAt:5 };
+      const low = s.qty <= s.lowAt;
+      return `<div class="item-row">
+        <div class="info">
+          <div class="name">${escapeHtml(it.name)} ${low ? '<span class="pill low">Low stock</span>' : ''}</div>
+          <div class="meta">Alert below <input type="number" min="0" data-lowat="${it.id}" value="${s.lowAt}" style="width:50px; display:inline-block; padding:2px 6px; font-size:12px;"></div>
+        </div>
+        <div class="qty-stepper">
+          <button data-sdec="${it.id}">−</button>
+          <span class="val">${s.qty}</span>
+          <button data-sinc="${it.id}">+</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('stockList').addEventListener('click', (e)=>{
+    const inc = e.target.closest('[data-sinc]');
+    const dec = e.target.closest('[data-sdec]');
+    if(inc){
+      const id = inc.dataset.sinc;
+      stock[id] = stock[id] || {qty:0, lowAt:5};
+      stock[id].qty += 1;
+      persistAll(); renderStock(); renderDashboard();
+    }
+    if(dec){
+      const id = dec.dataset.sdec;
+      stock[id] = stock[id] || {qty:0, lowAt:5};
+      stock[id].qty = Math.max(0, stock[id].qty - 1);
+      persistAll(); renderStock(); renderDashboard();
+    }
+  });
+  document.getElementById('stockList').addEventListener('change', (e)=>{
+    const lowAt = e.target.closest('[data-lowat]');
+    if(lowAt){
+      const id = lowAt.dataset.lowat;
+      const val = Math.max(0, parseInt(lowAt.value) || 0);
+      stock[id] = stock[id] || {qty:0, lowAt:5};
+      stock[id].lowAt = val;
+      persistAll(); renderStock(); renderDashboard();
+    }
+  });
+
+  /* ============================================================
+     SALES & EXPENSES
+     ============================================================ */
+  document.getElementById('expenseDate').value = todayStr();
+
+  document.getElementById('addExpenseBtn').addEventListener('click', ()=>{
+    const date = document.getElementById('expenseDate').value || todayStr();
+    const amount = parseFloat(document.getElementById('expenseAmount').value);
+    const desc = document.getElementById('expenseDesc').value.trim();
+    const errEl = document.getElementById('expenseFormError');
+    if(!desc){ errEl.textContent = 'Please describe the expense.'; errEl.style.display='block'; return; }
+    if(isNaN(amount) || amount <= 0){ errEl.textContent = 'Please enter a valid amount greater than 0.'; errEl.style.display='block'; return; }
+    errEl.style.display = 'none';
+    expenses.push({ id: uid(), date, desc, amount });
+    persistAll();
+    document.getElementById('expenseAmount').value = '';
+    document.getElementById('expenseDesc').value = '';
+    renderAll();
+    toast('Expense added');
+  });
+
+  function renderSales(){
+    const el = document.getElementById('salesLog');
+    if(orders.length === 0 && expenses.length === 0){
+      el.innerHTML = `<div class="empty-state">
+        <span class="ic">💰</span>
+        <div class="en">No sales or expenses recorded yet</div>
+        <div class="ta">இன்னும் விற்பனை / செலவு பதிவு இல்லை</div>
+      </div>`;
+      return;
+    }
+    // group by date
+    const byDate = {};
+    orders.forEach(o=>{
+      const d = o.ts.slice(0,10);
+      byDate[d] = byDate[d] || { sales:0, expense:0 };
+      byDate[d].sales += o.total;
+    });
+    expenses.forEach(ex=>{
+      byDate[ex.date] = byDate[ex.date] || { sales:0, expense:0 };
+      byDate[ex.date].expense += ex.amount;
+    });
+    const dates = Object.keys(byDate).sort((a,b)=> b.localeCompare(a));
+    el.innerHTML = dates.map(d=>{
+      const rec = byDate[d];
+      const net = rec.sales - rec.expense;
+      const dayExpenses = expenses.filter(ex=>ex.date===d);
+      return `<div class="day-group card" style="margin-bottom:12px;">
+        <h3>${new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short', day:'numeric', month:'short', year:'numeric'})}</h3>
+        <div class="day-totals">
+          <span>Sales: <b style="color:var(--good)">${money(rec.sales)}</b></span>
+          <span>Expenses: <b style="color:var(--bad)">${money(rec.expense)}</b></span>
+          <span>Net: <b>${money(net)}</b></span>
+        </div>
+        ${dayExpenses.length ? dayExpenses.map(ex=>`
+          <div class="item-row" style="padding:6px 10px;">
+            <div class="info"><div class="meta">${escapeHtml(ex.desc)}</div></div>
+            <div class="price" style="color:var(--bad); font-size:13px;">-${money(ex.amount)}</div>
+            <button class="icon-btn danger" data-delexp="${ex.id}" title="Delete">🗑</button>
+          </div>
+        `).join('') : ''}
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('salesLog').addEventListener('click', (e)=>{
+    const del = e.target.closest('[data-delexp]');
+    if(del){
+      const id = del.dataset.delexp;
+      confirmAction('Delete expense?', 'Remove this expense record?', ()=>{
+        expenses = expenses.filter(x=>x.id !== id);
+        persistAll();
+        renderAll();
+        toast('Expense deleted');
+      });
+    }
+  });
+
+  /* ============================================================
+     DASHBOARD
+     ============================================================ */
+  function renderDashboard(){
+    const today = todayStr();
+    const todaysOrders = orders.filter(o=> o.ts.slice(0,10) === today);
+    const todaysSales = todaysOrders.reduce((s,o)=> s+o.total, 0);
+    const lowItems = items.filter(it => (stock[it.id]||{qty:0,lowAt:5}).qty <= (stock[it.id]||{lowAt:5}).lowAt);
+
+    document.getElementById('dashboardStats').innerHTML = `
+      <div class="card stat-card">
+        <div class="num">${todaysOrders.length}</div>
+        <div class="lbl">Today's orders<span class="ta">இன்றைய ஆர்டர்கள்</span></div>
+      </div>
+      <div class="card stat-card">
+        <div class="num">${money(todaysSales)}</div>
+        <div class="lbl">Today's sales<span class="ta">இன்றைய விற்பனை</span></div>
+      </div>
+      <div class="card stat-card">
+        <div class="num">${items.length}</div>
+        <div class="lbl">Menu items<span class="ta">மொத்த பொருட்கள்</span></div>
+      </div>
+      <div class="card stat-card">
+        <div class="num" style="${lowItems.length ? 'color:var(--bad)':''}">${lowItems.length}</div>
+        <div class="lbl">Low stock<span class="ta">குறைந்த இருப்பு</span></div>
+      </div>
+    `;
+
+    const lowEl = document.getElementById('dashboardLowStock');
+    lowEl.innerHTML = lowItems.length === 0
+      ? `<div class="empty-state" style="padding:20px;"><span class="ic">✅</span><div class="en">All stocked up</div><div class="ta">எல்லாம் இருப்பில் உள்ளது</div></div>`
+      : lowItems.map(it=>{
+          const s = stock[it.id]||{qty:0};
+          return `<div class="item-row"><div class="info"><div class="name">${escapeHtml(it.name)}</div></div><div class="pill low">${s.qty} left</div></div>`;
+        }).join('');
+
+    const recEl = document.getElementById('dashboardRecentOrders');
+    const recent = [...orders].sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,5);
+    recEl.innerHTML = recent.length === 0
+      ? `<div class="empty-state" style="padding:20px;"><span class="ic">🧾</span><div class="en">No orders yet today</div><div class="ta">இன்னும் ஆர்டர்கள் இல்லை</div></div>`
+      : recent.map(o=>{
+          const dt = new Date(o.ts);
+          return `<div class="item-row"><div class="info"><div class="name" style="font-size:14px;">${dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div><div class="meta">${o.lines.length} item(s)</div></div><div class="price">${money(o.total)}</div></div>`;
+        }).join('');
+  }
+
+  /* ============================================================
+     RENDER ALL — call after any state change
+     ============================================================ */
+  function renderAll(){
+    renderDashboard();
+    renderMenu();
+    renderOrderPicker();
+    renderCart();
+    renderOrderHistory();
+    renderStock();
+    renderSales();
+  }
+
+  // boot
+  renderHeader();
+  renderAll();
+
+})();
+</script>
+</body>
+</html>
